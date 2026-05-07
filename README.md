@@ -444,4 +444,4 @@ varun.124477@stu.upes.ac.in
 
 ---
 
-*Minor Project — AI-powered anti-proxy face recognition attendance system.*
+*Minor Project — anti-proxy face recognition attendance system Ecosystem on Cloud.*
