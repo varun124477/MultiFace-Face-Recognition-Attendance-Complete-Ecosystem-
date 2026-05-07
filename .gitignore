@@ -3,3 +3,7 @@ __pycache__/
 *.save.*
 .env
 awscliv2.zip
+frame_server.py
+generate_embedding.py
+engine/
+templates/
