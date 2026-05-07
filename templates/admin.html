@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>AttendAI — Admin Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0a0b0f;--surface:#12141a;--card:#1a1d26;--border:#252836;--accent:#00e5a0;--accent2:#5b6ef5;--warn:#f5a623;--danger:#f54b4b;--text:#e8eaf0;--muted:#6b7280;--mono:'Space Mono',monospace;--sans:'DM Sans',sans-serif;--tab-h:64px;}
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);overflow:hidden;}
+  .app{display:flex;height:100vh;overflow:hidden;}
+
+  /* ── Sidebar ── */
+  .sidebar{width:220px;height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;}
+  .sidebar::-webkit-scrollbar{width:4px;}.sidebar::-webkit-scrollbar-thumb{background:var(--border);}
+  .logo{padding:22px 22px 18px;border-bottom:1px solid var(--border);}
+  .logo-mark{font-family:var(--mono);font-size:19px;font-weight:700;color:var(--accent);letter-spacing:-1px;}
+  .logo-sub{font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-top:2px;}
+  .nav-section{padding:14px 22px 5px;font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:10px 22px;cursor:pointer;color:var(--muted);font-size:13px;font-weight:500;transition:all .2s;border-left:3px solid transparent;text-decoration:none;}
+  .nav-item:hover,.nav-item.active{color:var(--text);background:rgba(0,229,160,.06);border-left-color:var(--accent);}
+  .nav-item .icon{font-size:14px;width:18px;text-align:center;}
+  .sidebar-footer{margin-top:auto;padding:14px 22px;border-top:1px solid var(--border);}
+  .avatar{width:34px;height:34px;background:linear-gradient(135deg,var(--danger),var(--warn));border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:13px;font-weight:700;color:#000;}
+
+  /* ── Main ── */
+  .main{flex:1;height:100vh;overflow-y:auto;padding:20px 24px;display:flex;flex-direction:column;gap:18px;}
+  .main::-webkit-scrollbar{width:5px;}.main::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+
+  /* ── Bottom Tabs (mobile) ── */
+  .bottom-tabs{display:none;position:fixed;bottom:0;left:0;right:0;height:var(--tab-h);background:var(--surface);border-top:1px solid var(--border);z-index:100;padding:0 8px;padding-bottom:env(safe-area-inset-bottom);}
+  .tabs-inner{display:flex;height:100%;align-items:center;justify-content:space-around;}
+  .tab-btn{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 10px;cursor:pointer;color:var(--muted);font-size:10px;font-weight:500;border:none;background:none;transition:color .2s;min-width:50px;}
+  .tab-btn.active{color:var(--accent);}
+  .tab-btn .tab-icon{font-size:20px;line-height:1;}
+
+  /* ── Pages ── */
+  .page{display:none;flex-direction:column;gap:18px;}
+  .page.active{display:flex;}
+
+  /* ── Header ── */
+  .header{display:flex;align-items:center;justify-content:space-between;flex-shrink:0;flex-wrap:wrap;gap:8px;}
+  .header h1{font-size:20px;font-weight:600;letter-spacing:-.5px;}
+  .header p{font-size:11px;color:var(--muted);margin-top:2px;font-family:var(--mono);}
+
+  /* ── Cards ── */
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;animation:fadeUp .35s ease both;}
+  .card-header{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid var(--border);}
+  .card-title{font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;}
+  .card-title .dot{width:7px;height:7px;border-radius:50%;background:var(--accent);}
+  .card-title .dot.blue{background:var(--accent2);}
+  .card-title .dot.warn{background:var(--warn);}
+  .card-action{font-size:11px;color:var(--accent);cursor:pointer;font-family:var(--mono);text-decoration:none;}
+
+  /* ── Forms ── */
+  .form-grid{display:grid;gap:13px;padding:16px;}
+  .form-grid.two{grid-template-columns:1fr 1fr;}
+  .form-grid.three{grid-template-columns:1fr 1fr 1fr;}
+  .form-grid.four{grid-template-columns:1fr 1fr 1fr 1fr;}
+  .form-group{display:flex;flex-direction:column;gap:5px;}
+  .form-group.full{grid-column:1/-1;}
+  label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-family:var(--mono);}
+  input,select{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 13px;color:var(--text);font-family:var(--sans);font-size:14px;outline:none;transition:border-color .2s;width:100%;}
+  input:focus,select:focus{border-color:var(--accent);}
+  select option{background:var(--surface);}
+  .form-actions{padding:0 16px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+
+  /* ── Buttons ── */
+  .btn{padding:10px 18px;border-radius:8px;font-family:var(--mono);font-size:12px;font-weight:700;cursor:pointer;border:none;transition:all .2s;letter-spacing:.5px;}
+  .btn-primary{background:var(--accent);color:#000;}
+  .btn-primary:hover{opacity:.9;}
+  .btn-primary:disabled{opacity:.5;cursor:not-allowed;}
+  .btn-danger{background:rgba(245,75,75,.15);color:var(--danger);border:1px solid rgba(245,75,75,.3);}
+  .btn-danger:hover{background:rgba(245,75,75,.25);}
+  .btn-secondary{background:var(--surface);color:var(--text);border:1px solid var(--border);}
+  .btn-secondary:hover{border-color:var(--accent);color:var(--accent);}
+  .btn-sm{padding:7px 12px;font-size:11px;}
+
+  /* ── Session preview ── */
+  .session-preview{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:13px 15px;margin:0 16px 16px;}
+  .preview-title{font-size:10px;color:var(--muted);font-family:var(--mono);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;}
+  .preview-grid{display:grid;grid-template-columns:1fr 1fr 1fr;}
+  .preview-win{padding:8px 12px;border-right:1px solid var(--border);text-align:center;}
+  .preview-win:last-child{border-right:none;}
+  .preview-win-label{font-size:10px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;margin-bottom:3px;}
+  .preview-win-time{font-size:11px;color:var(--accent);font-family:var(--mono);font-weight:700;}
+
+  /* ── Camera section ── */
+  .camera-section{grid-column:1/-1;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;}
+  .camera-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-family:var(--mono);margin-bottom:10px;}
+  .camera-layout{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .stream-box{background:#000;border-radius:8px;overflow:hidden;aspect-ratio:4/3;position:relative;}
+  .stream-box img{width:100%;height:100%;object-fit:cover;display:block;}
+  .stream-label{position:absolute;top:6px;left:6px;background:rgba(0,0,0,.7);padding:3px 8px;border-radius:4px;font-family:var(--mono);font-size:10px;color:var(--accent);display:flex;align-items:center;gap:5px;}
+  .esp-dot{width:6px;height:6px;background:var(--accent);border-radius:50%;animation:pulse 1.5s infinite;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+  .photo-box{background:#000;border-radius:8px;overflow:hidden;aspect-ratio:4/3;position:relative;border:2px solid var(--border);transition:border-color .3s;}
+  .photo-box.has-photo{border-color:var(--accent);}
+  .photo-box img{width:100%;height:100%;object-fit:cover;display:block;}
+  .photo-placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted);gap:6px;font-size:12px;}
+  .photo-placeholder .ph-icon{font-size:28px;}
+  .face-status{padding:7px 12px;border-radius:8px;font-size:12px;font-family:var(--mono);margin-top:8px;display:none;}
+  .face-status.ok{background:rgba(0,229,160,.1);border:1px solid rgba(0,229,160,.3);color:var(--accent);}
+  .face-status.fail{background:rgba(245,75,75,.1);border:1px solid rgba(245,75,75,.3);color:var(--danger);}
+  .face-status.checking{background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.3);color:var(--warn);}
+  .reg-progress{display:none;padding:0 16px 13px;}
+  .prog-track{height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
+  .prog-fill{height:100%;background:var(--accent);border-radius:2px;width:0%;transition:width .4s;}
+  .prog-text{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:4px;}
+
+  /* ── Table ── */
+  .table-wrap{overflow-x:auto;max-height:360px;overflow-y:auto;}
+  .table-wrap::-webkit-scrollbar{width:4px;}.table-wrap::-webkit-scrollbar-thumb{background:var(--border);}
+  table{width:100%;border-collapse:collapse;font-size:12px;min-width:460px;}
+  thead th{padding:8px 13px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);border-bottom:1px solid var(--border);font-family:var(--mono);position:sticky;top:0;background:var(--card);}
+  tbody tr{border-bottom:1px solid rgba(37,40,54,.5);transition:background .15s;}
+  tbody tr:hover{background:rgba(255,255,255,.025);}
+  td{padding:9px 13px;}
+  td.mono{font-family:var(--mono);font-size:11px;color:var(--muted);}
+  .badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-family:var(--mono);font-weight:700;}
+  .badge.active{background:rgba(0,229,160,.15);color:var(--accent);}
+  .badge.absent{background:rgba(245,75,75,.15);color:var(--danger);}
+  .badge.present{background:rgba(0,229,160,.15);color:var(--accent);}
+  .badge.finalized{background:rgba(91,110,245,.15);color:var(--accent2);}
+
+  /* ── Tags ── */
+  .tags-wrap{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
+  .tag{background:rgba(91,110,245,.15);color:var(--accent2);border:1px solid rgba(91,110,245,.3);padding:3px 10px;border-radius:4px;font-size:11px;font-family:var(--mono);display:flex;align-items:center;gap:5px;}
+  .tag-remove{cursor:pointer;color:var(--muted);}.tag-remove:hover{color:var(--danger);}
+  .tag-input-wrap{display:flex;gap:8px;align-items:center;}
+  .tag-input-wrap input{flex:1;}
+  .student-initials{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent2),var(--accent));display:inline-flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;font-weight:700;color:#000;}
+
+  /* ── Toast ── */
+  .toast{position:fixed;bottom:calc(var(--tab-h) + 12px);right:16px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 16px;font-size:12px;transform:translateY(80px);opacity:0;transition:all .3s;z-index:999;max-width:320px;}
+  .toast.show{transform:translateY(0);opacity:1;}
+  .toast.success{border-color:rgba(0,229,160,.4);color:var(--accent);}
+  .toast.error{border-color:rgba(245,75,75,.4);color:var(--danger);}
+
+  .empty{padding:24px;text-align:center;color:var(--muted);font-size:12px;}
+
+  /* ── Mobile ── */
+  @media(max-width:768px){
+    .sidebar{display:none;}
+    .bottom-tabs{display:block;}
+    .main{padding:16px;padding-bottom:calc(var(--tab-h)+16px+env(safe-area-inset-bottom));}
+    .form-grid.two{grid-template-columns:1fr;}
+    .form-grid.three{grid-template-columns:1fr 1fr;}
+    .form-grid.four{grid-template-columns:1fr 1fr;}
+    .camera-layout{grid-template-columns:1fr;}
+    input,select{font-size:16px;}
+    .btn{padding:11px 18px;font-size:13px;}
+  }
+  @media(max-width:400px){
+    .form-grid.three,.form-grid.four{grid-template-columns:1fr;}
+    .preview-grid{grid-template-columns:1fr;}
+    .preview-win{border-right:none;border-bottom:1px solid var(--border);}
+    .preview-win:last-child{border-bottom:none;}
+  }
+  @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- ── Sidebar ── -->
+<nav class="sidebar">
+  <div class="logo"><div class="logo-mark">AttendAI</div><div class="logo-sub">Admin Portal</div></div>
+  <div class="nav-section">Management</div>
+  <a class="nav-item active" onclick="show('sessions',this)"><span class="icon">📅</span> Sessions</a>
+  <a class="nav-item" onclick="show('students',this)"><span class="icon">👤</span> Students</a>
+  <a class="nav-item" onclick="show('teachers',this)"><span class="icon">👨‍🏫</span> Teachers</a>
+  <a class="nav-item" onclick="show('attendance',this)"><span class="icon">✓</span> Attendance</a>
+  <div class="nav-section">Links</div>
+  <a class="nav-item" href="/dashboard"><span class="icon">⬡</span> Teacher View</a>
+  <a class="nav-item" href="/report"><span class="icon">📋</span> Reports</a>
+  <a class="nav-item" href="/api/export_today_csv" download><span class="icon">⬇</span> Export CSV</a>
+  <a class="nav-item" href="/login"><span class="icon">→</span> Logout</a>
+  <div class="sidebar-footer">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="avatar">A</div>
+      <div><div style="font-size:13px;font-weight:600">Admin</div><div style="font-size:11px;color:var(--muted)">Administrator</div></div>
+    </div>
+  </div>
+</nav>
+
+<!-- ── Main ── -->
+<main class="main" id="main-scroll">
+  <div class="header">
+    <div><h1 id="section-title">Sessions</h1><p id="date-str"></p></div>
+  </div>
+
+  <!-- ══════════ SESSIONS ══════════ -->
+  <div class="page active" id="page-sessions">
+    <div class="card">
+      <div class="card-header"><div class="card-title"><div class="dot"></div> Schedule New Session</div></div>
+      <div class="form-grid three">
+        <div class="form-group"><label>Subject Name</label><input type="text" id="ses-subject" placeholder="e.g. Compiler Design"></div>
+        <div class="form-group"><label>Teacher</label><select id="ses-teacher"><option value="">Select teacher...</option></select></div>
+        <div class="form-group"><label>Room Number</label><input type="text" id="ses-room" placeholder="e.g. Room 10206"></div>
+      </div>
+      <div class="form-grid four" style="padding-top:0">
+        <div class="form-group"><label>Batch</label><input type="text" id="ses-batch" placeholder="e.g. CSE-B1-CCVT-2027"></div>
+        <div class="form-group"><label>Date & Time (IST)</label><input type="datetime-local" id="ses-start"></div>
+        <div class="form-group"><label>Duration (min)</label><input type="number" id="ses-duration" value="55" min="20" max="180"></div>
+        <div class="form-group"><label>Type</label><select id="ses-type"><option>Class Room</option><option>Lab</option><option>Online</option><option>Hybrid</option></select></div>
+      </div>
+      <div class="session-preview">
+        <div class="preview-title">⏱ Anti-Proxy Windows (10 min each) — IST</div>
+        <div class="preview-grid">
+          <div class="preview-win"><div class="preview-win-label">START</div><div class="preview-win-time" id="prev-start">—</div></div>
+          <div class="preview-win"><div class="preview-win-label">MID</div><div class="preview-win-time" id="prev-mid">—</div></div>
+          <div class="preview-win"><div class="preview-win-label">END</div><div class="preview-win-time" id="prev-end">—</div></div>
+        </div>
+      </div>
+      <div class="form-actions"><button class="btn btn-primary" onclick="createSession()">📅 SCHEDULE SESSION</button></div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><div class="dot blue"></div> All Sessions</div>
+        <span class="card-action" onclick="loadSessions()">↺ Refresh</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Subject</th><th>Teacher</th><th>Batch</th><th>Room</th><th>Date</th><th>Time (IST)</th><th>Status</th><th></th></tr></thead>
+          <tbody id="sessions-body"><tr><td colspan="8"><div class="empty">Loading...</div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ STUDENTS ══════════ -->
+  <div class="page" id="page-students">
+    <div class="card">
+      <div class="card-header"><div class="card-title"><div class="dot"></div> Register New Student</div></div>
+      <div class="form-grid two">
+        <div class="form-group"><label>Student ID</label><input type="text" id="s-id" placeholder="e.g. 500124477"></div>
+        <div class="form-group"><label>Full Name</label><input type="text" id="s-name" placeholder="e.g. Varun Upadhyay"></div>
+        <div class="form-group"><label>Roll Number</label><input type="text" id="s-roll" placeholder="e.g. 500124477"></div>
+        <div class="form-group"><label>Batch</label><input type="text" id="s-batch" placeholder="e.g. CSE-B1-CCVT-2027"></div>
+
+        <!-- ★ EMAIL FIELD — sends attendance email after every session ★ -->
+        <div class="form-group full">
+          <label>Student Email (for attendance notifications)</label>
+          <input type="email" id="s-email" placeholder="e.g. varun@university.edu"
+                 style="border-color:rgba(0,229,160,.3)">
+          <div style="font-size:10px;color:var(--accent);margin-top:4px;font-family:var(--mono)">
+            ✉ After each session ends, an email will be sent to this address with Present/Absent status
+          </div>
+        </div>
+
+        <!-- Camera -->
+        <div class="camera-section">
+          <div class="camera-label">📷 Student Photo — ESP32 Live Feed</div>
+          <div class="camera-layout">
+            <div>
+              <div style="font-size:10px;color:var(--muted);margin-bottom:6px;font-family:var(--mono)">LIVE FEED</div>
+              <div class="stream-box">
+                <img id="esp-stream-img" src="/video_feed_annotated" alt="Live">
+                <div class="stream-label"><div class="esp-dot"></div>LIVE</div>
+              </div>
+              <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+                <button class="btn btn-primary btn-sm" onclick="captureFromServer()" id="capture-btn">📸 CAPTURE</button>
+                <button class="btn btn-secondary btn-sm" onclick="reloadFeed()">↺ Reload</button>
+              </div>
+              <div style="font-size:10px;color:var(--muted);margin-top:6px;font-family:var(--mono)">Ask student to face camera, then press Capture</div>
+            </div>
+            <div>
+              <div style="font-size:10px;color:var(--muted);margin-bottom:6px;font-family:var(--mono)">CAPTURED PHOTO</div>
+              <div class="photo-box" id="photo-box">
+                <img id="captured-img" style="display:none;width:100%;height:100%;object-fit:cover">
+                <div class="photo-placeholder" id="photo-placeholder">
+                  <div class="ph-icon">🖼</div>
+                  <div>No photo yet</div>
+                  <div style="font-size:10px;color:var(--muted)">Press Capture</div>
+                </div>
+              </div>
+              <div class="face-status" id="face-status"></div>
+              <div style="margin-top:8px">
+                <button class="btn btn-secondary btn-sm" id="retake-btn" onclick="retake()" style="display:none">🔄 Retake</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="reg-progress" id="reg-progress">
+        <div class="prog-track"><div class="prog-fill" id="prog-fill"></div></div>
+        <div class="prog-text" id="prog-text">Processing...</div>
+      </div>
+      <div class="form-actions"><button class="btn btn-primary" id="reg-btn" onclick="registerStudent()">+ REGISTER STUDENT</button></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><div class="dot blue"></div> All Students</div>
+        <span class="card-action" onclick="loadStudents()">↺ Refresh</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Photo</th><th>Name</th><th>Roll</th><th>Batch</th><th>Email</th><th>ID</th><th>Embedding</th><th></th></tr></thead>
+          <tbody id="students-body"><tr><td colspan="8"><div class="empty">Loading...</div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ TEACHERS ══════════ -->
+  <div class="page" id="page-teachers">
+    <div class="card">
+      <div class="card-header"><div class="card-title"><div class="dot"></div> Register New Teacher</div></div>
+      <div class="form-grid two">
+        <div class="form-group"><label>Teacher ID</label><input type="text" id="t-id" placeholder="e.g. T001"></div>
+        <div class="form-group"><label>Full Name</label><input type="text" id="t-name" placeholder="e.g. Dr. Sharma"></div>
+        <div class="form-group"><label>Username (for login)</label><input type="text" id="t-username" placeholder="e.g. sharma"></div>
+        <div class="form-group"><label>Password</label><input type="password" id="t-password" placeholder="••••••••"></div>
+        <div class="form-group"><label>Department</label><input type="text" id="t-dept" placeholder="e.g. Computer Science"></div>
+        <div class="form-group">
+          <label>Subjects They Teach</label>
+          <div class="tag-input-wrap">
+            <input type="text" id="t-subj-input" placeholder="Type subject + press Add" onkeydown="if(event.key==='Enter')addTag()">
+            <button class="btn btn-primary btn-sm" onclick="addTag()">Add</button>
+          </div>
+          <div class="tags-wrap" id="subj-tags"></div>
+        </div>
+      </div>
+      <div class="form-actions"><button class="btn btn-primary" onclick="registerTeacher()">+ REGISTER TEACHER</button></div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><div class="dot blue"></div> All Teachers</div>
+        <span class="card-action" onclick="loadTeachers()">↺ Refresh</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Name</th><th>Username</th><th>Department</th><th>Subjects</th><th></th></tr></thead>
+          <tbody id="teachers-body"><tr><td colspan="6"><div class="empty">Loading...</div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ ATTENDANCE ══════════ -->
+  <div class="page" id="page-attendance">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><div class="dot blue"></div> All Attendance Records</div>
+        <div style="display:flex;gap:8px">
+          <a href="/api/export_today_csv" download class="card-action">⬇ CSV</a>
+          <span class="card-action" onclick="loadAttendance()">↺ Refresh</span>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Name</th><th>Roll</th><th>Batch</th><th>Subject</th><th>Room</th><th>Date</th><th>Windows</th><th>Status</th></tr></thead>
+          <tbody id="attendance-body"><tr><td colspan="9"><div class="empty">Loading...</div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ── Bottom Tabs (mobile) ── -->
+<nav class="bottom-tabs">
+  <div class="tabs-inner">
+    <button class="tab-btn active" onclick="show('sessions',this)" data-page="sessions"><span class="tab-icon">📅</span><span>Sessions</span></button>
+    <button class="tab-btn" onclick="show('students',this)" data-page="students"><span class="tab-icon">👤</span><span>Students</span></button>
+    <button class="tab-btn" onclick="show('teachers',this)" data-page="teachers"><span class="tab-icon">👨‍🏫</span><span>Teachers</span></button>
+    <button class="tab-btn" onclick="show('attendance',this)" data-page="attendance"><span class="tab-icon">✓</span><span>Attendance</span></button>
+    <button class="tab-btn" onclick="window.location.href='/dashboard'"><span class="tab-icon">⬡</span><span>Dashboard</span></button>
+  </div>
+</nav>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+document.getElementById('date-str').textContent =
+  new Date().toLocaleDateString('en-IN',{weekday:'short',year:'numeric',month:'short',day:'numeric'});
+
+const now = new Date();
+now.setMinutes(now.getMinutes()-now.getTimezoneOffset());
+document.getElementById('ses-start').value = now.toISOString().slice(0,16);
+
+const titles={sessions:'Sessions',students:'Students',teachers:'Teachers',attendance:'Attendance'};
+
+function show(name,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item,.tab-btn').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  document.getElementById('section-title').textContent=titles[name]||name;
+  if(el)el.classList.add('active');
+  document.querySelectorAll(`[data-page="${name}"]`).forEach(b=>b.classList.add('active'));
+  document.getElementById('main-scroll').scrollTop=0;
+  if(name==='students')loadStudents();
+  if(name==='teachers'){loadTeachers();loadTeacherDropdown();}
+  if(name==='attendance')loadAttendance();
+  if(name==='sessions'){loadSessions();loadTeacherDropdown();}
+}
+
+function toast(msg,type='success'){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast show '+type;
+  setTimeout(()=>t.className='toast',3500);
+}
+function cap(s){return(s||'').replace(/\b\w/g,c=>c.toUpperCase());}
+
+// Window preview
+['ses-start','ses-duration'].forEach(id=>
+  document.getElementById(id).addEventListener('input',updatePreview));
+function updatePreview(){
+  const sv=document.getElementById('ses-start').value;
+  const dur=parseInt(document.getElementById('ses-duration').value)||55;
+  if(!sv)return;
+  const startTs=Math.floor(new Date(sv).getTime()/1000);
+  const endTs=startTs+dur*60;
+  const fmt=ts=>new Date(ts*1000).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('prev-start').textContent=fmt(startTs)+' – '+fmt(startTs+600);
+  document.getElementById('prev-mid').textContent=fmt(startTs+dur*30-300)+' – '+fmt(startTs+dur*30+300);
+  document.getElementById('prev-end').textContent=fmt(endTs-600)+' – '+fmt(endTs);
+}
+updatePreview();
+
+async function loadTeacherDropdown(){
+  try{
+    const res=await fetch('/api/teachers');
+    const data=await res.json();
+    const sel=document.getElementById('ses-teacher');
+    sel.innerHTML='<option value="">Select teacher...</option>';
+    data.forEach(t=>{sel.innerHTML+=`<option value="${t.teacher_id}" data-name="${t.name}">${cap(t.name||'')} (${t.teacher_id})</option>`;});
+  }catch(e){}
+}
+
+async function createSession(){
+  const subject=document.getElementById('ses-subject').value.trim();
+  const teacherSel=document.getElementById('ses-teacher');
+  const teacher_id=teacherSel.value;
+  const teacher_name=teacherSel.options[teacherSel.selectedIndex]?.dataset.name||'';
+  const room=document.getElementById('ses-room').value.trim();
+  const batch=document.getElementById('ses-batch').value.trim();
+  const startVal=document.getElementById('ses-start').value;
+  const dur=parseInt(document.getElementById('ses-duration').value)||55;
+  if(!subject){toast('Subject required','error');return;}
+  if(!teacher_id){toast('Select a teacher','error');return;}
+  if(!room){toast('Room required','error');return;}
+  if(!batch){toast('Batch required','error');return;}
+  if(!startVal){toast('Start time required','error');return;}
+  const startTs=Math.floor(new Date(startVal).getTime()/1000);
+  try{
+    const res=await fetch('/api/sessions',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({subject,teacher_id,teacher_name,room,batch,start_ts:startTs,duration_mins:dur})});
+    const data=await res.json();
+    if(res.ok){toast('✓ Session scheduled: '+data.session_id);loadSessions();}
+    else toast(data.error||'Failed','error');
+  }catch(e){toast('Server error','error');}
+}
+
+async function loadSessions(){
+  try{
+    const res=await fetch('/api/sessions');
+    const data=await res.json();
+    const body=document.getElementById('sessions-body');
+    if(!data.length){body.innerHTML='<tr><td colspan="8"><div class="empty">No sessions yet.</div></td></tr>';return;}
+    body.innerHTML=data.map(s=>{
+      const d=new Date(s.start_ts*1000);
+      const dateStr=d.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+      const startStr=d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+      const endStr=new Date(s.end_ts*1000).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+      return`<tr>
+        <td><strong>${cap(s.subject||'')}</strong></td>
+        <td>${cap(s.teacher||'')}</td>
+        <td class="mono" style="color:var(--accent2)">${s.batch||'—'}</td>
+        <td class="mono">${s.room||'—'}</td>
+        <td class="mono">${dateStr}</td>
+        <td class="mono">${startStr}–${endStr}</td>
+        <td><span class="badge ${s.status||'active'}">${s.status||'active'}</span></td>
+        <td><button class="btn btn-danger" style="padding:4px 10px;font-size:10px" onclick="deleteSession('${s.session_id}')">Delete</button></td>
+      </tr>`;
+    }).join('');
+  }catch(e){}
+}
+
+async function deleteSession(id){
+  if(!confirm('Delete this session?'))return;
+  const res=await fetch('/api/sessions/'+id,{method:'DELETE'});
+  if(res.ok){toast('✓ Deleted');loadSessions();}
+}
+
+// Camera
+let capturedBlob=null;
+function reloadFeed(){document.getElementById('esp-stream-img').src='/video_feed_annotated?t='+Date.now();}
+
+async function captureFromServer(){
+  const btn=document.getElementById('capture-btn');
+  const status=document.getElementById('face-status');
+  btn.disabled=true;btn.textContent='Capturing...';
+  status.className='face-status checking';status.style.display='block';
+  status.textContent='⏳ Capturing from ESP32...';
+  try{
+    const res=await fetch('/api/capture_frame');
+    if(!res.ok)throw new Error('Capture failed: '+res.status);
+    const blob=await res.blob();capturedBlob=blob;
+    const url=URL.createObjectURL(blob);
+    const img=document.getElementById('captured-img');
+    img.src=url;img.style.display='block';
+    document.getElementById('photo-placeholder').style.display='none';
+    document.getElementById('photo-box').classList.add('has-photo');
+    document.getElementById('retake-btn').style.display='inline-block';
+    status.textContent='⏳ Checking for face...';
+    const fd=new FormData();fd.append('photo',blob,'check.jpg');
+    const cr=await fetch('/api/check_face',{method:'POST',body:fd});
+    const cd=await cr.json();
+    if(cd.face_detected){status.className='face-status ok';status.textContent=`✓ Face detected — ready to register`;}
+    else{status.className='face-status fail';status.textContent='✗ No face — retake photo';}
+  }catch(e){
+    status.className='face-status fail';status.textContent='✗ '+e.message;
+    toast('Capture failed','error');
+  }finally{btn.disabled=false;btn.textContent='📸 CAPTURE';}
+}
+
+function retake(){
+  capturedBlob=null;
+  document.getElementById('captured-img').style.display='none';
+  document.getElementById('captured-img').src='';
+  document.getElementById('photo-placeholder').style.display='flex';
+  document.getElementById('photo-box').classList.remove('has-photo');
+  document.getElementById('face-status').style.display='none';
+  document.getElementById('retake-btn').style.display='none';
+}
+
+// Register Student — email included
+async function registerStudent(){
+  const sid  =document.getElementById('s-id').value.trim();
+  const name =document.getElementById('s-name').value.trim();
+  const roll =document.getElementById('s-roll').value.trim();
+  const batch=document.getElementById('s-batch').value.trim();
+  const email=document.getElementById('s-email').value.trim();  // ← email
+  if(!sid||!name||!roll||!batch){toast('Fill all required fields','error');return;}
+  if(!capturedBlob){toast('Capture a photo first','error');return;}
+  // Email is optional but recommended
+  if(email && !email.includes('@')){toast('Enter a valid email address','error');return;}
+
+  const btn=document.getElementById('reg-btn');
+  const prog=document.getElementById('reg-progress');
+  const fill=document.getElementById('prog-fill');
+  const ptext=document.getElementById('prog-text');
+  btn.disabled=true;btn.textContent='Processing...';
+  prog.style.display='block';fill.style.width='30%';
+  ptext.textContent='Extracting face embedding...';
+
+  const fd=new FormData();
+  fd.append('student_id',sid);
+  fd.append('name',name);
+  fd.append('roll',roll);
+  fd.append('batch',batch);
+  fd.append('email',email);       // ← email sent to server
+  fd.append('photo',capturedBlob,`${sid}.jpg`);
+
+  try{
+    fill.style.width='70%';
+    const res=await fetch('/api/register_student',{method:'POST',body:fd});
+    const data=await res.json();
+    fill.style.width='100%';
+    if(res.ok){
+      toast('✓ '+data.message+(email?' — email saved for notifications':''));
+      // Reset all fields including email
+      ['s-id','s-name','s-roll','s-batch','s-email'].forEach(id=>document.getElementById(id).value='');
+      retake();loadStudents();
+    }else toast(data.error||'Failed','error');
+  }catch(e){toast('Server error','error');}
+  finally{
+    btn.disabled=false;btn.textContent='+ REGISTER STUDENT';
+    setTimeout(()=>{prog.style.display='none';fill.style.width='0%';},1500);
+  }
+}
+
+async function loadStudents(){
+  try{
+    const res=await fetch('/api/students');
+    const data=await res.json();
+    const body=document.getElementById('students-body');
+    if(!data.length){body.innerHTML='<tr><td colspan="8"><div class="empty">No students yet.</div></td></tr>';return;}
+    body.innerHTML=data.map(s=>{
+      const hasEmb=s.embedding&&s.embedding.length>0;
+      const initials=(s.name||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+      const emailBadge=s.email
+        ?`<span style="color:var(--accent);font-size:10px;font-family:var(--mono)">✉ ${s.email}</span>`
+        :`<span style="color:var(--muted);font-size:10px;font-family:var(--mono)">no email</span>`;
+      return`<tr>
+        <td><div class="student-initials">${initials}</div></td>
+        <td><strong>${cap(s.name||'')}</strong></td>
+        <td class="mono">${s.roll||'—'}</td>
+        <td class="mono" style="color:var(--accent2)">${s.batch||'—'}</td>
+        <td>${emailBadge}</td>
+        <td class="mono">${s.student_id||'—'}</td>
+        <td><span class="badge ${hasEmb?'active':'absent'}">${hasEmb?'✓ ready':'✗ missing'}</span></td>
+        <td><button class="btn btn-danger" style="padding:4px 8px;font-size:10px" onclick="deleteStudent('${s.student_id}')">Del</button></td>
+      </tr>`;
+    }).join('');
+  }catch(e){}
+}
+
+async function deleteStudent(id){
+  if(!confirm('Delete this student?'))return;
+  const res=await fetch('/api/delete_student/'+id,{method:'DELETE'});
+  if(res.ok){toast('✓ Deleted');loadStudents();}
+}
+
+// Teachers
+let teacherSubjects=[];
+function addTag(){
+  const input=document.getElementById('t-subj-input');
+  const val=input.value.trim();
+  if(!val||teacherSubjects.includes(val))return;
+  teacherSubjects.push(val);input.value='';renderTags();
+}
+function removeTag(s){teacherSubjects=teacherSubjects.filter(x=>x!==s);renderTags();}
+function renderTags(){
+  document.getElementById('subj-tags').innerHTML=
+    teacherSubjects.map(s=>`<div class="tag">${s}<span class="tag-remove" onclick="removeTag('${s}')">✕</span></div>`).join('');
+}
+
+async function registerTeacher(){
+  const id=document.getElementById('t-id').value.trim();
+  const name=document.getElementById('t-name').value.trim();
+  const uname=document.getElementById('t-username').value.trim();
+  const pwd=document.getElementById('t-password').value;
+  const dept=document.getElementById('t-dept').value.trim();
+  if(!id||!name||!uname||!pwd){toast('Fill all required fields','error');return;}
+  try{
+    const res=await fetch('/api/register_teacher',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({teacher_id:id,name,username:uname,password:pwd,department:dept,subjects:teacherSubjects})});
+    const data=await res.json();
+    if(res.ok){
+      toast('✓ '+data.message);
+      ['t-id','t-name','t-username','t-password','t-dept'].forEach(id=>document.getElementById(id).value='');
+      teacherSubjects=[];renderTags();loadTeachers();loadTeacherDropdown();
+    }else toast(data.error||'Failed','error');
+  }catch(e){toast('Server error','error');}
+}
+
+async function loadTeachers(){
+  try{
+    const res=await fetch('/api/teachers');
+    const data=await res.json();
+    const body=document.getElementById('teachers-body');
+    if(!data.length){body.innerHTML='<tr><td colspan="6"><div class="empty">No teachers yet.</div></td></tr>';return;}
+    body.innerHTML=data.map((t,i)=>{
+      const subjs=(t.subjects||[]).map(s=>`<span class="badge active" style="margin:1px">${s}</span>`).join('');
+      return`<tr>
+        <td class="mono">${i+1}</td>
+        <td><strong>${cap(t.name||'')}</strong></td>
+        <td class="mono">${t.username||'—'}</td>
+        <td>${t.department||'—'}</td>
+        <td>${subjs||'—'}</td>
+        <td><button class="btn btn-danger" style="padding:4px 8px;font-size:10px" onclick="deleteTeacher('${t.teacher_id}')">Del</button></td>
+      </tr>`;
+    }).join('');
+  }catch(e){}
+}
+
+async function deleteTeacher(id){
+  if(!confirm('Delete?'))return;
+  const res=await fetch('/api/delete_teacher/'+id,{method:'DELETE'});
+  if(res.ok){toast('✓ Deleted');loadTeachers();}
+}
+
+async function loadAttendance(){
+  try{
+    const res=await fetch('/api/attendance');
+    const data=await res.json();
+    const body=document.getElementById('attendance-body');
+    if(!data.length){body.innerHTML='<tr><td colspan="9"><div class="empty">No records.</div></td></tr>';return;}
+    body.innerHTML=data.map((r,i)=>`<tr>
+      <td class="mono">${i+1}</td>
+      <td>${cap(r.name||'')}</td>
+      <td class="mono">${r.roll||'—'}</td>
+      <td class="mono" style="color:var(--accent2)">${r.batch||'—'}</td>
+      <td>${r.subject||'—'}</td>
+      <td class="mono">${r.room||'—'}</td>
+      <td class="mono">${r.date||'—'}</td>
+      <td class="mono">${r.windows_seen!==undefined?r.windows_seen+'/3':'—'}</td>
+      <td><span class="badge ${r.status||'present'}">${r.status||'present'}</span></td>
+    </tr>`).join('');
+  }catch(e){}
+}
+
+// Init
+loadSessions();
+loadTeacherDropdown();
+</script>
+</body>
+</html>

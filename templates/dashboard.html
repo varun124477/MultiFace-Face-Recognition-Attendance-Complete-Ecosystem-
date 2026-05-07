@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>AttendAI — Teacher Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:      #0a0b0f;
+    --surface: #12141a;
+    --card:    #1a1d26;
+    --border:  #252836;
+    --accent:  #00e5a0;
+    --accent2: #5b6ef5;
+    --warn:    #f5a623;
+    --danger:  #f54b4b;
+    --text:    #e8eaf0;
+    --muted:   #6b7280;
+    --mono:    'Space Mono', monospace;
+    --sans:    'DM Sans', sans-serif;
+    --tab-h:   64px;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    overflow: hidden;
+  }
+
+  /* ── Layout ── */
+  .app {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ── Desktop Sidebar ── */
+  .sidebar {
+    width: 220px;
+    height: 100vh;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    overflow-y: auto;
+  }
+  .logo { padding: 22px 22px 18px; border-bottom: 1px solid var(--border); }
+  .logo-mark { font-family: var(--mono); font-size: 19px; font-weight: 700; color: var(--accent); letter-spacing: -1px; }
+  .logo-sub  { font-size: 10px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-top: 2px; }
+  .nav-section { padding: 14px 22px 5px; font-size: 10px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 22px; cursor: pointer;
+    color: var(--muted); font-size: 13px; font-weight: 500;
+    transition: all .2s; border-left: 3px solid transparent; text-decoration: none;
+  }
+  .nav-item:hover, .nav-item.active {
+    color: var(--text); background: rgba(0,229,160,.06); border-left-color: var(--accent);
+  }
+  .nav-item .icon { font-size: 14px; width: 18px; text-align: center; }
+  .sidebar-footer { margin-top: auto; padding: 14px 22px; border-top: 1px solid var(--border); }
+
+  /* ── Main scroll area ── */
+  .main {
+    flex: 1;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 20px 24px;
+    padding-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .main::-webkit-scrollbar { width: 5px; }
+  .main::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* ── Bottom Tab Bar (mobile only) ── */
+  .bottom-tabs {
+    display: none;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: var(--tab-h);
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    z-index: 100;
+    padding: 0 8px;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .tabs-inner {
+    display: flex;
+    height: 100%;
+    align-items: center;
+    justify-content: space-around;
+  }
+  .tab-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 8px 12px;
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 500;
+    border: none;
+    background: none;
+    transition: color .2s;
+    min-width: 56px;
+  }
+  .tab-btn.active { color: var(--accent); }
+  .tab-btn .tab-icon { font-size: 20px; line-height: 1; }
+  .tab-btn .tab-label { font-size: 10px; letter-spacing: .3px; }
+
+  /* ── Page sections ── */
+  .page { display: none; flex-direction: column; gap: 16px; }
+  .page.active { display: flex; }
+
+  /* ── Header ── */
+  .header { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+  .header h1 { font-size: 20px; font-weight: 600; letter-spacing: -.5px; }
+  .header p  { font-size: 11px; color: var(--muted); margin-top: 2px; font-family: var(--mono); }
+  .header-right { display: flex; gap: 8px; align-items: center; }
+
+  .live-badge {
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(0,229,160,.1); border: 1px solid rgba(0,229,160,.3);
+    padding: 5px 12px; border-radius: 20px;
+    font-size: 11px; color: var(--accent); font-family: var(--mono);
+  }
+  .live-dot { width: 7px; height: 7px; background: var(--accent); border-radius: 50%; animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.3} }
+
+  .dl-btn {
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(91,110,245,.15); border: 1px solid rgba(91,110,245,.35);
+    color: var(--accent2); padding: 5px 12px; border-radius: 8px;
+    font-family: var(--mono); font-size: 11px; font-weight: 700;
+    cursor: pointer; text-decoration: none; white-space: nowrap;
+  }
+
+  /* ── Stats ── */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4,1fr);
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  .stat-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px 16px;
+    position: relative; overflow: hidden;
+  }
+  .stat-card::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:2px;
+    background: var(--accent);
+  }
+  .stat-card.warn::before  { background: var(--warn); }
+  .stat-card.danger::before{ background: var(--danger); }
+  .stat-card.blue::before  { background: var(--accent2); }
+  .stat-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+  .stat-value { font-family: var(--mono); font-size: 26px; font-weight: 700; margin: 4px 0 2px; }
+  .stat-sub   { font-size: 11px; color: var(--muted); }
+
+  /* ── Session bar ── */
+  .session-bar {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px 16px;
+    display: flex; align-items: center; gap: 16px;
+    flex-wrap: wrap; flex-shrink: 0;
+  }
+  .session-field { display: flex; flex-direction: column; gap: 2px; }
+  .session-field-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; font-family: var(--mono); }
+  .session-field-value { font-size: 13px; font-weight: 500; }
+  .session-divider { width: 1px; height: 28px; background: var(--border); flex-shrink: 0; }
+
+  /* ── Window tables ── */
+  .windows-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; flex-shrink: 0; }
+  .window-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; transition: border-color .3s; }
+  .window-card.active-win { border-color: var(--accent); }
+  .window-card.done-win   { border-color: var(--accent2); }
+  .window-card-header {
+    padding: 10px 14px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .win-badge {
+    font-family: var(--mono); font-size: 10px; font-weight: 700;
+    padding: 2px 8px; border-radius: 4px;
+    background: rgba(107,114,128,.15); color: var(--muted);
+  }
+  .window-card.active-win .win-badge { background: rgba(0,229,160,.15); color: var(--accent); }
+  .window-card.done-win   .win-badge { background: rgba(91,110,245,.15); color: var(--accent2); }
+  .win-time-range { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+  .win-count-badge {
+    font-family: var(--mono); font-size: 11px; font-weight: 700;
+    background: var(--surface); border: 1px solid var(--border);
+    padding: 2px 8px; border-radius: 20px;
+  }
+  .window-card.active-win .win-count-badge { border-color: rgba(0,229,160,.4); color: var(--accent); }
+  .window-card.done-win   .win-count-badge { border-color: rgba(91,110,245,.4); color: var(--accent2); }
+  .win-progress { height: 2px; background: var(--border); }
+  .win-progress-fill { height: 100%; transition: width 1s linear; background: var(--accent); }
+  .window-card.done-win .win-progress-fill { background: var(--accent2); }
+  .win-table-wrap { max-height: 140px; overflow-y: auto; }
+  .win-table-wrap::-webkit-scrollbar { width: 3px; }
+  .win-table-wrap::-webkit-scrollbar-thumb { background: var(--border); }
+  .win-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .win-table thead th {
+    padding: 6px 12px; text-align: left; font-size: 10px;
+    text-transform: uppercase; letter-spacing: 1px; color: var(--muted);
+    border-bottom: 1px solid var(--border); font-family: var(--mono);
+  }
+  .win-table tbody tr { border-bottom: 1px solid rgba(37,40,54,.5); }
+  .win-table td { padding: 7px 12px; }
+  .win-table td.roll { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+  .win-table td.det-time { font-family: var(--mono); font-size: 10px; color: var(--accent); }
+  .win-empty { padding: 16px; text-align: center; font-size: 11px; color: var(--muted); }
+
+  /* ── Content grid ── */
+  .content-grid { display: grid; grid-template-columns: 1fr 320px; gap: 16px; align-items: start; }
+  .col-left  { display: flex; flex-direction: column; gap: 16px; }
+  .col-right { display: flex; flex-direction: column; gap: 16px; }
+
+  /* ── Cards ── */
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+  .card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px; border-bottom: 1px solid var(--border);
+  }
+  .card-title { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 7px; }
+  .card-title .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+  .card-title .dot.blue { background: var(--accent2); }
+  .card-title .dot.warn { background: var(--warn); }
+  .card-action { font-size: 11px; color: var(--accent); cursor: pointer; font-family: var(--mono); }
+
+  /* ── Stream ── */
+  .stream-wrap { position: relative; background: #000; aspect-ratio: 4/3; }
+  .stream-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .stream-overlay {
+    position: absolute; bottom: 8px; left: 8px;
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(0,0,0,.7); padding: 4px 10px; border-radius: 6px;
+    font-family: var(--mono); font-size: 10px; color: var(--accent);
+  }
+
+  /* ── Table ── */
+  .table-wrap { max-height: 260px; overflow-y: auto; overflow-x: auto; }
+  .table-wrap::-webkit-scrollbar { width: 4px; }
+  .table-wrap::-webkit-scrollbar-thumb { background: var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 480px; }
+  thead th {
+    padding: 8px 12px; text-align: left; font-size: 10px;
+    text-transform: uppercase; letter-spacing: 1px; color: var(--muted);
+    border-bottom: 1px solid var(--border); font-family: var(--mono);
+    position: sticky; top: 0; background: var(--card);
+  }
+  tbody tr { border-bottom: 1px solid rgba(37,40,54,.5); transition: background .15s; }
+  tbody tr:hover { background: rgba(255,255,255,.025); }
+  td { padding: 8px 12px; }
+  td.mono { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  td.t    { font-family: var(--mono); font-size: 11px; color: var(--accent); }
+  .badge { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-family: var(--mono); font-weight: 700; }
+  .badge.present { background: rgba(0,229,160,.15); color: var(--accent); }
+  .badge.absent  { background: rgba(245,75,75,.15);  color: var(--danger); }
+
+  /* ── Low attendance ── */
+  .low-item { display: flex; align-items: center; gap: 10px; padding: 9px 16px; border-bottom: 1px solid rgba(37,40,54,.5); }
+  .low-item:last-child { border-bottom: none; }
+  .low-name { font-size: 13px; font-weight: 500; }
+  .low-roll { font-size: 10px; color: var(--muted); font-family: var(--mono); }
+  .low-bar-wrap { flex: 1; }
+  .low-bar-track { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .low-bar-fill  { height: 100%; border-radius: 2px; }
+  .low-pct { font-family: var(--mono); font-size: 12px; font-weight: 700; min-width: 40px; text-align: right; }
+
+  /* ── Schedule ── */
+  .schedule-item { display: flex; gap: 10px; padding: 9px 16px; border-bottom: 1px solid rgba(37,40,54,.5); align-items: flex-start; }
+  .schedule-item:last-child { border-bottom: none; }
+  .sch-time { font-family: var(--mono); font-size: 10px; color: var(--muted); min-width: 72px; padding-top: 2px; }
+  .sch-dot  { width: 6px; height: 6px; border-radius: 50%; background: var(--accent2); margin-top: 4px; flex-shrink: 0; }
+  .sch-subj { font-size: 13px; font-weight: 500; }
+  .sch-room { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+  .empty { padding: 24px; text-align: center; color: var(--muted); font-size: 12px; }
+
+  /* ════════════════════════════════════
+     MOBILE RESPONSIVE
+  ════════════════════════════════════ */
+  @media (max-width: 768px) {
+    .sidebar      { display: none; }
+    .bottom-tabs  { display: block; }
+
+    .main {
+      padding: 16px;
+      padding-bottom: calc(var(--tab-h) + 16px + env(safe-area-inset-bottom));
+      height: 100vh;
+      overflow-y: auto;
+    }
+
+    /* Stats: 2x2 grid on mobile */
+    .stats-row { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .stat-value { font-size: 22px; }
+
+    /* Session bar: stack vertically */
+    .session-bar { flex-direction: column; align-items: flex-start; gap: 8px; }
+    .session-divider { display: none; }
+
+    /* Windows: stack vertically on mobile */
+    .windows-row { grid-template-columns: 1fr; gap: 10px; }
+
+    /* Content grid: single column */
+    .content-grid { grid-template-columns: 1fr; }
+    .col-right { flex-direction: column; }
+
+    /* Header */
+    .header { flex-wrap: wrap; gap: 8px; }
+    .header h1 { font-size: 18px; }
+    .header-right { width: 100%; justify-content: space-between; }
+
+    /* Stream full width */
+    .stream-wrap { aspect-ratio: 16/9; }
+
+    /* Tables scroll horizontally */
+    .table-wrap { max-height: 300px; }
+
+    /* Cards */
+    .card { border-radius: 12px; }
+
+    /* Window card header flex wrap */
+    .window-card-header { flex-wrap: wrap; gap: 4px; }
+    .win-time-range { width: 100%; }
+  }
+
+  @media (max-width: 400px) {
+    .stats-row { grid-template-columns: 1fr 1fr; }
+    .stat-value { font-size: 20px; }
+    .dl-btn span { display: none; }
+  }
+
+  @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+  .card { animation: fadeUp .35s ease both; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Desktop Sidebar -->
+  <nav class="sidebar">
+    <div class="logo">
+      <div class="logo-mark">AttendAI</div>
+      <div class="logo-sub">Teacher Portal</div>
+    </div>
+    <div class="nav-section">Main</div>
+    <a class="nav-item active" onclick="showPage('dashboard',this)"><span class="icon">⬡</span> Dashboard</a>
+    <a class="nav-item" onclick="showPage('stream',this)"><span class="icon">◉</span> Live Stream</a>
+    <a class="nav-item" onclick="showPage('attendance',this)"><span class="icon">✓</span> Attendance</a>
+    <a class="nav-item" onclick="showPage('report',this)"><span class="icon">📋</span> Reports</a>
+    <div class="nav-section">Admin</div>
+    <a class="nav-item" href="/admin"><span class="icon">🛡</span> Admin Portal</a>
+    <a class="nav-item" href="/login"><span class="icon">→</span> Logout</a>
+    <div class="sidebar-footer">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:32px;height:32px;background:linear-gradient(135deg,var(--accent2),var(--accent));border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;font-weight:700;color:#000">T</div>
+        <div><div style="font-size:13px;font-weight:600">Teacher</div><div style="font-size:10px;color:var(--muted)">B.Tech CSE</div></div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="main" id="main-scroll">
+
+    <!-- ── DASHBOARD PAGE ── -->
+    <div class="page active" id="page-dashboard">
+
+      <div class="header">
+        <div>
+          <h1>Overview</h1>
+          <p id="date-str">—</p>
+        </div>
+        <div class="header-right">
+          <a class="dl-btn" href="/api/export_today_csv" download>⬇ <span>Export CSV</span></a>
+          <div class="live-badge"><div class="live-dot"></div>LIVE</div>
+        </div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-label">Present Today</div><div class="stat-value" id="stat-present">—</div><div class="stat-sub">students</div></div>
+        <div class="stat-card blue"><div class="stat-label">Total</div><div class="stat-value" id="stat-total">—</div><div class="stat-sub">registered</div></div>
+        <div class="stat-card warn"><div class="stat-label">Low Att.</div><div class="stat-value" id="stat-low">—</div><div class="stat-sub">below 75%</div></div>
+        <div class="stat-card danger"><div class="stat-label">Rate</div><div class="stat-value" id="stat-rate">—</div><div class="stat-sub">today</div></div>
+      </div>
+
+      <!-- Session bar -->
+      <div class="session-bar" id="session-bar">
+        <div class="session-field"><div class="session-field-label">Session</div><div class="session-field-value" id="ses-subject">No active session</div></div>
+        <div class="session-divider"></div>
+        <div class="session-field"><div class="session-field-label">Teacher</div><div class="session-field-value" id="ses-teacher">—</div></div>
+        <div class="session-divider"></div>
+        <div class="session-field"><div class="session-field-label">Room</div><div class="session-field-value" id="ses-room">—</div></div>
+        <div class="session-divider"></div>
+        <div class="session-field"><div class="session-field-label">Batch</div><div class="session-field-value" id="ses-batch" style="color:var(--accent2)">—</div></div>
+        <div class="session-divider"></div>
+        <div class="session-field"><div class="session-field-label">Window</div><div class="session-field-value" id="ses-window" style="color:var(--muted)">—</div></div>
+        <div class="session-divider"></div>
+        <div class="session-field"><div class="session-field-label">Remaining</div><div class="session-field-value" id="ses-remaining" style="font-family:var(--mono)">—</div></div>
+      </div>
+
+      <!-- 3 Window Tables -->
+      <div class="windows-row" id="windows-row">
+        <div class="window-card" id="win-card-0">
+          <div class="window-card-header">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span class="win-badge" id="win-badge-0">START</span>
+              <span class="win-time-range" id="win-time-0">—</span>
+            </div>
+            <span class="win-count-badge" id="win-count-0">0</span>
+          </div>
+          <div class="win-progress"><div class="win-progress-fill" id="win-prog-0" style="width:0%"></div></div>
+          <div class="win-table-wrap">
+            <table class="win-table">
+              <thead><tr><th>#</th><th>Name</th><th>Roll</th><th>Time</th></tr></thead>
+              <tbody id="win-body-0"><tr><td colspan="4"><div class="win-empty">No active session</div></td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="window-card" id="win-card-1">
+          <div class="window-card-header">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span class="win-badge" id="win-badge-1">MID</span>
+              <span class="win-time-range" id="win-time-1">—</span>
+            </div>
+            <span class="win-count-badge" id="win-count-1">0</span>
+          </div>
+          <div class="win-progress"><div class="win-progress-fill" id="win-prog-1" style="width:0%"></div></div>
+          <div class="win-table-wrap">
+            <table class="win-table">
+              <thead><tr><th>#</th><th>Name</th><th>Roll</th><th>Time</th></tr></thead>
+              <tbody id="win-body-1"><tr><td colspan="4"><div class="win-empty">No active session</div></td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="window-card" id="win-card-2">
+          <div class="window-card-header">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span class="win-badge" id="win-badge-2">END</span>
+              <span class="win-time-range" id="win-time-2">—</span>
+            </div>
+            <span class="win-count-badge" id="win-count-2">0</span>
+          </div>
+          <div class="win-progress"><div class="win-progress-fill" id="win-prog-2" style="width:0%"></div></div>
+          <div class="win-table-wrap">
+            <table class="win-table">
+              <thead><tr><th>#</th><th>Name</th><th>Roll</th><th>Time</th></tr></thead>
+              <tbody id="win-body-2"><tr><td colspan="4"><div class="win-empty">No active session</div></td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="content-grid">
+        <div class="col-left">
+          <!-- Stream -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><div class="dot"></div> Live Camera</div>
+              <span class="card-action" onclick="document.getElementById('live-stream').src='/video_feed?t='+Date.now()">↺</span>
+            </div>
+            <div class="stream-wrap">
+              <img id="live-stream" src="/video_feed" alt="Live" onerror="this.style.opacity='.3'">
+              <div class="stream-overlay"><div class="live-dot"></div>ESP32</div>
+            </div>
+          </div>
+
+          <!-- Attendance log -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><div class="dot blue"></div> Today's Log</div>
+              <span class="card-action" onclick="loadAttendance()">↺</span>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>#</th><th>Name</th><th>Roll</th><th>Subject</th><th>Wins</th><th>Status</th><th>Time</th></tr></thead>
+                <tbody id="attendance-body"><tr><td colspan="7"><div class="empty">Loading...</div></td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-right">
+          <!-- Schedule -->
+          <div class="card">
+            <div class="card-header"><div class="card-title"><div class="dot blue"></div> Schedule</div></div>
+            <div id="schedule-body"></div>
+          </div>
+          <!-- Low attendance -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><div class="dot warn"></div> Low Attendance</div>
+              <span class="card-action" onclick="loadLow()">↺</span>
+            </div>
+            <div id="low-body"><div class="empty">Loading...</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── STREAM PAGE (mobile) ── -->
+    <div class="page" id="page-stream">
+      <div class="header"><div><h1>Live Stream</h1></div><div class="live-badge"><div class="live-dot"></div>LIVE</div></div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><div class="dot"></div> ESP32 Camera</div>
+          <span class="card-action" onclick="document.getElementById('live-stream-m').src='/video_feed?t='+Date.now()">↺ Reconnect</span>
+        </div>
+        <div class="stream-wrap">
+          <img id="live-stream-m" src="/video_feed" alt="Live" onerror="this.style.opacity='.3'">
+          <div class="stream-overlay"><div class="live-dot"></div>ESP32</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ATTENDANCE PAGE (mobile) ── -->
+    <div class="page" id="page-attendance">
+      <div class="header">
+        <div><h1>Attendance</h1></div>
+        <a class="dl-btn" href="/api/export_today_csv" download>⬇ CSV</a>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><div class="dot blue"></div> Today's Log</div>
+          <span class="card-action" onclick="loadAttendance()">↺</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>#</th><th>Name</th><th>Roll</th><th>Subject</th><th>Wins</th><th>Status</th><th>Time</th></tr></thead>
+            <tbody id="attendance-body-m"><tr><td colspan="7"><div class="empty">Loading...</div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><div class="dot warn"></div> Low Attendance</div>
+        </div>
+        <div id="low-body-m"><div class="empty">Loading...</div></div>
+      </div>
+    </div>
+
+    <!-- ── REPORT PAGE (mobile) ── -->
+    <div class="page" id="page-report">
+      <div class="header"><div><h1>Reports</h1></div></div>
+      <div class="card" style="padding:20px;text-align:center">
+        <a href="/report" style="color:var(--accent);font-family:var(--mono);font-size:13px">Open Full Report →</a>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Bottom Tab Bar (mobile) -->
+  <nav class="bottom-tabs">
+    <div class="tabs-inner">
+      <button class="tab-btn active" onclick="showPage('dashboard',this)" data-page="dashboard">
+        <span class="tab-icon">⬡</span>
+        <span class="tab-label">Dashboard</span>
+      </button>
+      <button class="tab-btn" onclick="showPage('stream',this)" data-page="stream">
+        <span class="tab-icon">◉</span>
+        <span class="tab-label">Stream</span>
+      </button>
+      <button class="tab-btn" onclick="showPage('attendance',this)" data-page="attendance">
+        <span class="tab-icon">✓</span>
+        <span class="tab-label">Attendance</span>
+      </button>
+      <button class="tab-btn" onclick="showPage('report',this)" data-page="report">
+        <span class="tab-icon">📋</span>
+        <span class="tab-label">Reports</span>
+      </button>
+      <button class="tab-btn" onclick="window.location.href='/admin'">
+        <span class="tab-icon">🛡</span>
+        <span class="tab-label">Admin</span>
+      </button>
+    </div>
+  </nav>
+
+</div>
+
+<script>
+// ── Date ──
+document.getElementById('date-str').textContent =
+  new Date().toLocaleDateString('en-IN',{weekday:'short',year:'numeric',month:'short',day:'numeric'});
+
+// ── Page switching ──
+function showPage(name, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item, .tab-btn').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  if (el) el.classList.add('active');
+
+  // scroll to top when switching pages on mobile
+  document.getElementById('main-scroll').scrollTop = 0;
+
+  // sync both nav items and tab buttons
+  document.querySelectorAll(`[data-page="${name}"]`).forEach(b => b.classList.add('active'));
+
+  if (name === 'attendance') {
+    loadAttendanceMobile();
+    loadLowMobile();
+  }
+}
+
+function cap(s) { return (s||'').replace(/\b\w/g, c=>c.toUpperCase()); }
+function fmtTime(ts) { return new Date(ts*1000).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}); }
+function fmtDuration(s) { return `${Math.floor(s/60)}m ${s%60}s`; }
+
+// ── Window status ──
+async function loadWindowStatus() {
+  try {
+    const res  = await fetch('/api/session_window_status');
+    const data = await res.json();
+
+    if (!data.active) {
+      document.getElementById('ses-subject').textContent = 'No active session';
+      ['ses-teacher','ses-room','ses-batch','ses-window','ses-remaining'].forEach(id => {
+        document.getElementById(id).textContent = '—';
+      });
+      [0,1,2].forEach(i => {
+        document.getElementById('win-card-'+i).className = 'window-card';
+        document.getElementById('win-count-'+i).textContent = '0';
+        document.getElementById('win-prog-'+i).style.width = '0%';
+        document.getElementById('win-body-'+i).innerHTML =
+          '<tr><td colspan="4"><div class="win-empty">No active session</div></td></tr>';
+      });
+      return;
+    }
+
+    document.getElementById('ses-subject').textContent  = cap(data.subject);
+    document.getElementById('ses-teacher').textContent  = cap(data.teacher||'—');
+    document.getElementById('ses-room').textContent     = data.room||'—';
+    document.getElementById('ses-batch').textContent    = data.batch||'—';
+    document.getElementById('ses-remaining').textContent= fmtDuration(Math.max(0,data.end_ts-data.now_ts));
+
+    if (data.active_window) {
+      document.getElementById('ses-window').textContent  = data.active_window+' WINDOW';
+      document.getElementById('ses-window').style.color  = 'var(--accent)';
+    } else {
+      document.getElementById('ses-window').textContent  = 'Between windows';
+      document.getElementById('ses-window').style.color  = 'var(--warn)';
+    }
+
+    const now = data.now_ts;
+    data.windows.forEach((w,i) => {
+      const isPast   = now > w.to;
+      const isActive = now >= w.from && now <= w.to;
+      const pct      = isActive ? Math.round(((now-w.from)/(w.to-w.from))*100) : isPast ? 100 : 0;
+      const color    = isActive ? 'var(--accent)' : isPast ? 'var(--accent2)' : 'var(--border)';
+
+      document.getElementById('win-card-'+i).className =
+        'window-card' + (isActive?' active-win':'') + (isPast&&!isActive?' done-win':'');
+      document.getElementById('win-count-'+i).textContent = w.count;
+      document.getElementById('win-time-'+i).textContent  = w.from_str+' – '+w.to_str;
+      document.getElementById('win-prog-'+i).style.width  = pct+'%';
+      document.getElementById('win-prog-'+i).style.background = color;
+
+      const tbody = document.getElementById('win-body-'+i);
+      if (!w.students || w.students.length === 0) {
+        const msg = isPast ? 'Window closed' : isActive ? 'Waiting...' : 'Not started yet';
+        tbody.innerHTML = `<tr><td colspan="4"><div class="win-empty">${msg}</div></td></tr>`;
+      } else {
+        tbody.innerHTML = w.students.map((s,idx) => `
+          <tr>
+            <td class="mono" style="color:var(--muted)">${idx+1}</td>
+            <td><strong>${cap(s.name||'')}</strong></td>
+            <td class="roll">${s.roll||'—'}</td>
+            <td class="det-time">${s.detected_at||'—'}</td>
+          </tr>`).join('');
+      }
+    });
+  } catch(e) {}
+}
+
+// ── Attendance ──
+async function loadAttendance() {
+  try {
+    const res   = await fetch('/api/attendance');
+    const data  = await res.json();
+    const today = new Date().toISOString().split('T')[0];
+    const rows  = data.filter(r => r.date === today);
+    const body  = document.getElementById('attendance-body');
+
+    if (!rows.length) {
+      body.innerHTML = '<tr><td colspan="7"><div class="empty">No records today.</div></td></tr>';
+      document.getElementById('stat-present').textContent = '0';
+      return;
+    }
+
+    const html = rows.map((r,i) => `<tr>
+      <td class="mono">${i+1}</td>
+      <td>${cap(r.name)}</td>
+      <td class="mono">${r.roll||'—'}</td>
+      <td style="font-size:11px">${r.subject||'—'}</td>
+      <td class="mono">${r.windows_seen!==undefined?r.windows_seen+'/3':'—'}</td>
+      <td><span class="badge ${r.status||'present'}">${r.status||'present'}</span></td>
+      <td class="t">${(r.timestamp||'').split(' ')[1]||'—'}</td>
+    </tr>`).join('');
+
+    body.innerHTML = html;
+    const unique = new Set(rows.filter(r=>r.status!=='absent').map(r=>r.student_id)).size;
+    document.getElementById('stat-present').textContent = unique;
+  } catch(e) {}
+}
+
+async function loadAttendanceMobile() {
+  try {
+    const res   = await fetch('/api/attendance');
+    const data  = await res.json();
+    const today = new Date().toISOString().split('T')[0];
+    const rows  = data.filter(r => r.date === today);
+    const body  = document.getElementById('attendance-body-m');
+    if (!rows.length) { body.innerHTML='<tr><td colspan="7"><div class="empty">No records today.</div></td></tr>'; return; }
+    body.innerHTML = rows.map((r,i) => `<tr>
+      <td class="mono">${i+1}</td><td>${cap(r.name)}</td>
+      <td class="mono">${r.roll||'—'}</td>
+      <td style="font-size:11px">${r.subject||'—'}</td>
+      <td class="mono">${r.windows_seen!==undefined?r.windows_seen+'/3':'—'}</td>
+      <td><span class="badge ${r.status||'present'}">${r.status||'present'}</span></td>
+      <td class="t">${(r.timestamp||'').split(' ')[1]||'—'}</td>
+    </tr>`).join('');
+  } catch(e) {}
+}
+
+// ── Low attendance ──
+function lowHTML(data) {
+  if (!data.length) return '<div class="empty">✓ All above 75%</div>';
+  return data.map(s => {
+    const pct = s.percentage;
+    const col = pct<60?'var(--danger)':pct<75?'var(--warn)':'var(--accent)';
+    return `<div class="low-item">
+      <div style="min-width:0">
+        <div class="low-name">${cap(s.name)}</div>
+        <div class="low-roll">${s.roll}</div>
+      </div>
+      <div class="low-bar-wrap">
+        <div class="low-bar-track"><div class="low-bar-fill" style="width:${pct}%;background:${col}"></div></div>
+      </div>
+      <div class="low-pct" style="color:${col}">${pct}%</div>
+    </div>`;
+  }).join('');
+}
+
+async function loadLow() {
+  try {
+    const res  = await fetch('/api/low_attendance');
+    const data = await res.json();
+    document.getElementById('stat-low').textContent = data.length;
+    document.getElementById('low-body').innerHTML = lowHTML(data);
+  } catch(e) {}
+}
+
+async function loadLowMobile() {
+  try {
+    const res  = await fetch('/api/low_attendance');
+    const data = await res.json();
+    document.getElementById('low-body-m').innerHTML = lowHTML(data);
+  } catch(e) {}
+}
+
+// ── Students count ──
+async function loadStudents() {
+  try {
+    const res  = await fetch('/api/students');
+    const data = await res.json();
+    document.getElementById('stat-total').textContent = data.length;
+    const present = parseInt(document.getElementById('stat-present').textContent)||0;
+    const rate = data.length ? Math.round((present/data.length)*100) : 0;
+    document.getElementById('stat-rate').textContent = rate+'%';
+  } catch(e) {}
+}
+
+// ── Schedule ──
+function loadSchedule() {
+  const schedule = [
+    {time:"10:00–10:55", subject:"Containerization & DevOps", room:"Room 10206"},
+    {time:"11:00–11:55", subject:"Compiler Design",           room:"Room 10206"},
+    {time:"12:00–12:55", subject:"Compiler Design (Lab)",     room:"Room 10206"},
+    {time:"13:00–13:55", subject:"Intl. Trade Conventions",   room:"Online"},
+    {time:"14:00–14:55", subject:"Statistics & Data Analysis",room:"Room 10206"},
+  ];
+  document.getElementById('schedule-body').innerHTML = schedule.map(s => `
+    <div class="schedule-item">
+      <div class="sch-time">${s.time}</div>
+      <div class="sch-dot"></div>
+      <div><div class="sch-subj">${s.subject}</div><div class="sch-room">${s.room}</div></div>
+    </div>`).join('');
+}
+
+// ── Init ──
+loadAttendance();
+loadLow();
+loadStudents();
+loadSchedule();
+loadWindowStatus();
+
+setInterval(loadWindowStatus,  3000);
+setInterval(loadAttendance,   10000);
+setInterval(loadStudents,     10000);
+setInterval(loadLow,          30000);
+</script>
+</body>
+</html>

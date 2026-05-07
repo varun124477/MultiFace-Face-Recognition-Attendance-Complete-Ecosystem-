@@ -1,0 +1,93 @@
+from flask import Flask, Response
+import cv2
+from flask import Flask, request, Response
+import numpy as np
+import cv2
+import boto3
+from engine.gpu_attendance_engine import recognize_frame
+
+app = Flask(__name__)
+
+dynamodb = boto3.resource("dynamodb", region_name="ap-south-1")
+attendance_table = dynamodb.Table("Attendance")
+
+
+@app.route('/upload', methods=['POST'])
+def upload():
+
+    img_bytes = request.data
+
+    npimg = np.frombuffer(img_bytes, np.uint8)
+    frame = cv2.imdecode(npimg, cv2.IMREAD_COLOR)
+
+    if frame is None:
+        return "Invalid image", 400
+
+    name = recognize_frame(frame)
+
+    if name:
+        print("Student recognized:", name)
+
+    return "OK", 200
+
+
+@app.route("/dashboard")
+def dashboard():
+    import boto3
+
+    dynamodb = boto3.resource("dynamodb", region_name="ap-south-1")
+    table = dynamodb.Table("Attendance")
+
+    response = table.scan()
+    records = response.get("Items", [])
+
+    html = """
+    <h1>Teacher Attendance Portal</h1>
+
+    <div style="display:flex; gap:40px">
+
+    <div>
+    <h2>Attendance</h2>
+    <table border=1>
+    <tr>
+    <th>Name</th>
+    <th>Roll</th>
+    <th>Date</th>
+    </tr>
+    """
+    for r in records:
+        name = r.get("name", "")
+        roll = r.get("roll", "")
+        time = r.get("timestamp", "")
+
+        html += f"<tr><td>{name}</td><td>{roll}</td><td>{time}</td></tr>"
+
+    html += "</table>"
+
+    return html
+@app.route("/video_feed")
+def video_feed():
+    from flask import Response
+    import cv2
+
+    cap = cv2.VideoCapture("http://172.20.10.2:81/stream")
+
+    def generate():
+        while True:
+            success, frame = cap.read()
+            if not success:
+                break
+
+            name = recognize_frame(frame)
+
+            ret, buffer = cv2.imencode('.jpg', frame)
+            frame_bytes = buffer.tobytes()
+
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+
+    return Response(generate(),
+        mimetype='multipart/x-mixed-replace; boundary=frame')
+
+app.run(host="0.0.0.0", port=5000)
+re

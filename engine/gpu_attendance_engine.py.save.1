@@ -1,0 +1,103 @@
+import insightface
+import numpy as np
+import cv2
+import boto3
+from datetime import datetime
+
+# Load face recognition model (GPU)
+app = insightface.app.FaceAnalysis(name='buffalo_l')
+app.prepare(ctx_id=0)
+
+# DynamoDB connection
+dynamodb = boto3.resource("dynamodb", region_name="ap-south-1")
+attendance_table = dynamodb.Table("Attendance")
+
+# Store student embeddings
+students_embeddings = {}
+
+
+def load_embeddings():
+    global students_embeddings
+
+    try:
+        data = np.load("embeddings.npy", allow_pickle=True).item()
+        students_embeddings = data
+        print("Embeddings loaded:", len(students_embeddings))
+
+    except:
+        print("No embeddings found")
+
+
+def mark_attendance(student_id, name, roll):
+
+    now = datetime.now()
+
+    attendance_table.put_item(
+        Item={
+            "student_id": student_id,
+            "name": name,
+            "roll": roll,
+            "date": now.strftime("%Y-%m-%d"),
+            "time": now.strftime("%H:%M:%S")
+        }
+    )
+
+
+load_embeddings()
+
+
+def recognize_frame(frame):
+
+    faces = app.get(frame)
+
+    print("Faces detected:", len(faces))
+
+    for face in faces:
+
+        x1, y1, x2, y2 = map(int, face.bbox)
+
+        # Draw green rectangle
+        cv2.rectangle(frame, (x1,y1), (x2,y2), (0,255,0), 2)
+
+        emb = face.embedding
+
+        best_score = 0
+        best_student = None
+
+        for sid, data in students_embeddings.items():
+
+            known_emb = data["embedding"]
+            names = data['names'']
+            score = np.dot(emb, known_emb) / (
+                np.linalg.norm(emb) * np.linalg.norm(known_emb)
+            )
+
+            if score > best_score:
+                best_score = score
+                best_student = sid
+
+        if best_score > 0.5 and best_student:
+
+            student = students_embeddings[best_student]
+
+            name = student["name"]
+
+            cv2.putText(
+                frame,
+                name,
+                (x1, y1 - 10),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.8,
+                (0,255,0),
+                2
+            )
+
+            mark_attendance(
+                best_student,
+                student["name"],
+                student["roll"]
+            )
+
+            return name
+
+    return None
