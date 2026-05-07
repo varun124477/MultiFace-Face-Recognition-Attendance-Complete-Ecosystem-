@@ -440,6 +440,7 @@ MIT License — free to use, modify, and distribute with attribution.
 
 **Varun Upadhyay**  
 B.Tech CSE — UPES Dehradun
+varun.124477@stu.upes.ac.in
 
 ---
 
